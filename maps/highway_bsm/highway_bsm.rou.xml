@@ -1,0 +1,513 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  highway_bsm.rou.xml
+  Vehicle types, type distribution, traffic flows, and ego vehicle route.
+  Total demand: ~38400 veh/hr across all lanes at peak.
+  Ego vehicle circulates continuously via rerouter (Method A).
+-->
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+
+  <!-- ============================================================
+       SECTION 2 — VEHICLE TYPES
+       All use IDM car-following + LC2013 lane-change model
+       ============================================================ -->
+
+  <!-- TYPE 1: Passenger car — 45% of traffic -->
+  <vType id="passenger_car"
+         carFollowModel="IDM"
+         lcModel="LC2013"
+         length="4.5"
+         width="1.8"
+         maxSpeed="55.56"
+         accel="2.6"
+         decel="4.5"
+         sigma="0.5"
+         tau="1.0"
+         minGap="2.5"
+         speedFactor="normc(1.0,0.1,0.8,1.2)"
+         speedDev="0.1"
+         color="0.7,0.7,0.7"
+         guiShape="passenger"/>
+
+  <!-- TYPE 1a: Aggressive sub-type — 20% of passenger cars (9% total) -->
+  <vType id="passenger_car_aggressive"
+         carFollowModel="IDM"
+         lcModel="LC2013"
+         length="4.5"
+         width="1.8"
+         maxSpeed="55.56"
+         accel="2.6"
+         decel="4.5"
+         sigma="0.8"
+         tau="0.7"
+         minGap="2.0"
+         speedFactor="normc(1.1,0.1,0.9,1.3)"
+         speedDev="0.1"
+         lcImpatience="0.8"
+         lcAssertive="1.2"
+         lcSpeedGain="1.5"
+         color="0.9,0.5,0.5"
+         guiShape="passenger"/>
+
+  <!-- TYPE 1b: Cautious sub-type — 15% of passenger cars (6.75% total) -->
+  <vType id="passenger_car_cautious"
+         carFollowModel="IDM"
+         lcModel="LC2013"
+         length="4.5"
+         width="1.8"
+         maxSpeed="44.44"
+         accel="2.0"
+         decel="4.5"
+         sigma="0.2"
+         tau="1.8"
+         minGap="3.5"
+         speedFactor="normc(0.9,0.05,0.75,1.0)"
+         speedDev="0.05"
+         lcCooperative="1.0"
+         lcImpatience="0.0"
+         color="0.6,0.8,0.6"
+         guiShape="passenger"/>
+
+  <!-- TYPE 2: SUV/Pickup — 25% of traffic -->
+  <vType id="suv_pickup"
+         carFollowModel="IDM"
+         lcModel="LC2013"
+         length="5.4"
+         width="2.0"
+         maxSpeed="50.0"
+         accel="2.3"
+         decel="4.2"
+         sigma="0.5"
+         tau="1.1"
+         minGap="2.5"
+         speedFactor="normc(0.95,0.1,0.75,1.15)"
+         speedDev="0.1"
+         color="0.4,0.4,0.8"
+         guiShape="passenger/van"/>
+
+  <!-- TYPE 3: Semi-truck — 15% of traffic
+       Restricted to lanes 0-1 (rightmost) via lcKeepRight.
+       Forms loose platoons with minGap=4.0 -->
+  <vType id="semi_truck"
+         carFollowModel="IDM"
+         lcModel="LC2013"
+         length="16.5"
+         width="2.55"
+         maxSpeed="29.17"
+         accel="0.8"
+         decel="3.2"
+         sigma="0.2"
+         tau="2.5"
+         minGap="4.0"
+         speedFactor="normc(0.85,0.05,0.75,0.95)"
+         lcStrategic="0.5"
+         lcKeepRight="1.0"
+         color="0.8,0.3,0.1"
+         guiShape="truck/semitrailer"/>
+
+  <!-- TYPE 4: Delivery van — 8% of traffic -->
+  <vType id="delivery_van"
+         carFollowModel="IDM"
+         lcModel="LC2013"
+         length="6.0"
+         width="2.1"
+         maxSpeed="41.67"
+         accel="1.8"
+         decel="4.0"
+         sigma="0.6"
+         tau="1.2"
+         minGap="2.5"
+         speedFactor="normc(0.9,0.08,0.75,1.05)"
+         color="1.0,1.0,0.0"
+         guiShape="delivery"/>
+
+  <!-- TYPE 5: Motorcycle — 4% of traffic -->
+  <vType id="motorcycle"
+         carFollowModel="IDM"
+         lcModel="LC2013"
+         length="2.2"
+         width="0.8"
+         maxSpeed="61.11"
+         accel="4.5"
+         decel="6.0"
+         sigma="0.8"
+         tau="0.6"
+         minGap="1.5"
+         speedFactor="normc(1.1,0.15,0.8,1.4)"
+         color="1.0,0.5,0.0"
+         guiShape="motorcycle"/>
+
+  <!-- TYPE 6: City bus — 2% of traffic -->
+  <vType id="city_bus"
+         carFollowModel="IDM"
+         lcModel="LC2013"
+         length="12.0"
+         width="2.55"
+         maxSpeed="25.0"
+         accel="1.2"
+         decel="3.5"
+         sigma="0.2"
+         tau="2.0"
+         minGap="3.0"
+         speedFactor="normc(0.9,0.05,0.8,1.0)"
+         color="0.2,0.6,0.2"
+         guiShape="bus"/>
+
+  <!-- TYPE 7: Autonomous vehicle — 1% of traffic -->
+  <vType id="autonomous_vehicle"
+         carFollowModel="IDM"
+         lcModel="LC2013"
+         length="4.5"
+         width="1.8"
+         maxSpeed="44.44"
+         accel="2.0"
+         decel="5.0"
+         sigma="0.0"
+         tau="0.6"
+         minGap="1.5"
+         speedFactor="normc(0.95,0.03,0.85,1.05)"
+         color="0.0,1.0,1.0"
+         guiShape="passenger"/>
+
+  <!-- TYPE 8: EGO vehicle — 1 vehicle only, red, constant speed -->
+  <vType id="ego_vehicle"
+         carFollowModel="IDM"
+         lcModel="LC2013"
+         length="4.5"
+         width="1.8"
+         maxSpeed="33.33"
+         accel="2.0"
+         decel="4.5"
+         sigma="0.0"
+         tau="1.0"
+         minGap="2.5"
+         speedFactor="normc(1.0,0.0,1.0,1.0)"
+         color="1.0,0.0,0.0"
+         guiShape="passenger"/>
+
+  <!-- ============================================================
+       VEHICLE TYPE DISTRIBUTIONS
+       vTypeDistribution mixes types 1-7 by probability weight.
+       Weights (summing to 100): car=45, suv=25, truck=15,
+         van=8, moto=4, bus=2, av=1
+       For frontage roads (higher truck%): truck=30, car=35, etc.
+       ============================================================ -->
+
+  <!-- Standard highway distribution -->
+  <vTypeDistribution id="highway_mix">
+    <vType refid="passenger_car"           probability="0.296"/>
+    <vType refid="passenger_car_aggressive" probability="0.09"/>
+    <vType refid="passenger_car_cautious"   probability="0.064"/>
+    <vType refid="suv_pickup"              probability="0.25"/>
+    <vType refid="semi_truck"              probability="0.15"/>
+    <vType refid="delivery_van"            probability="0.08"/>
+    <vType refid="motorcycle"              probability="0.04"/>
+    <vType refid="city_bus"               probability="0.02"/>
+    <vType refid="autonomous_vehicle"     probability="0.01"/>
+  </vTypeDistribution>
+
+  <!-- HOV distribution: 90% cars, 10% AV -->
+  <vTypeDistribution id="hov_mix">
+    <vType refid="passenger_car"       probability="0.90"/>
+    <vType refid="autonomous_vehicle"  probability="0.10"/>
+  </vTypeDistribution>
+
+  <!-- Frontage road distribution: higher truck % (serves local businesses) -->
+  <vTypeDistribution id="frontage_mix">
+    <vType refid="passenger_car"           probability="0.20"/>
+    <vType refid="passenger_car_aggressive" probability="0.05"/>
+    <vType refid="passenger_car_cautious"   probability="0.05"/>
+    <vType refid="suv_pickup"              probability="0.15"/>
+    <vType refid="semi_truck"              probability="0.30"/>
+    <vType refid="delivery_van"            probability="0.15"/>
+    <vType refid="motorcycle"              probability="0.03"/>
+    <vType refid="city_bus"               probability="0.05"/>
+    <vType refid="autonomous_vehicle"     probability="0.02"/>
+  </vTypeDistribution>
+
+  <!-- ============================================================
+       ROUTES
+       Mainline through-routes (used by flows below)
+       ============================================================ -->
+
+  <!-- Eastbound mainline: all three segments -->
+  <route id="route_east_thru"
+         edges="hw_e_0_900 hw_e_900_2100 hw_e_2100_3000"/>
+
+  <!-- Westbound mainline: all three segments -->
+  <route id="route_west_thru"
+         edges="hw_w_3000_2100 hw_w_2100_900 hw_w_900_0"/>
+
+  <!-- HOV routes -->
+  <route id="route_hov_east" edges="hov_east"/>
+  <route id="route_hov_west" edges="hov_west"/>
+
+  <!-- Frontage road routes -->
+  <route id="route_fn_thru"
+         edges="fn_0_600 fn_600_900 fn_900_1500 fn_1500_2100 fn_2100_2400 fn_2400_3000"/>
+  <route id="route_fs_thru"
+         edges="fs_3000_2400 fs_2400_2100 fs_2100_1500 fs_1500_900 fs_900_600 fs_600_0"/>
+
+  <!-- On-ramp routes (frontage → ramp → mainline → exit) -->
+  <route id="route_rN600"
+         edges="fn_0_600 ramp_N_600 hw_e_900_2100 hw_e_2100_3000"/>
+  <route id="route_rN1500"
+         edges="fn_900_1500 ramp_N_1500 hw_e_2100_3000"/>
+  <route id="route_rN2400"
+         edges="fn_2100_2400 ramp_N_2400 hw_e_2100_3000"/>
+
+  <route id="route_rS600"
+         edges="fs_900_600 ramp_S_600 hw_w_900_0"/>
+  <route id="route_rS1500"
+         edges="fs_1500_900 ramp_S_1500 hw_w_900_0"/>
+  <route id="route_rS2400"
+         edges="fs_2400_2100 ramp_S_2400 hw_w_2100_900 hw_w_900_0"/>
+
+  <!-- EGO loop route:
+       Eastbound mainline → off-ramp at 2100 → frontage north → on-ramp at 600 → repeat
+       The rerouter in the additional file re-inserts the ego at the start each cycle. -->
+  <route id="ego_circle_route"
+         edges="hw_e_0_900 hw_e_900_2100 offramp_N_2100 fn_2100_2400 fn_2400_3000"/>
+
+  <!-- ============================================================
+       SECTION 3 — TRAFFIC FLOWS
+       Demand ramp-up:
+         t=0→120:   40% of target  (network fill-up phase)
+         t=120→240: 40%→100% ramp  (implemented as 3 steps)
+         t=240→3360: 100% (peak saturation)
+         t=3360→3600: 70% (evening wind-down)
+
+       NOTE: vehsPerHour values are per flow element (not per lane).
+       ============================================================ -->
+
+  <!-- ── FLOW 1: Eastbound mainline (6 lanes)
+       Peak: 10800 veh/hr = 1800 veh/lane/hr (saturation) -->
+
+  <!-- 40% phase: t=0 to t=120 -->
+  <flow id="flow_east_warmup"
+        type="highway_mix"
+        route="route_east_thru"
+        begin="0" end="120"
+        vehsPerHour="4320"
+        departLane="best"
+        departSpeed="max"/>
+
+  <!-- Ramp-up step 1: ~60% at t=120 -->
+  <flow id="flow_east_ramp1"
+        type="highway_mix"
+        route="route_east_thru"
+        begin="120" end="180"
+        vehsPerHour="6480"
+        departLane="best"
+        departSpeed="max"/>
+
+  <!-- Ramp-up step 2: ~80% at t=180 -->
+  <flow id="flow_east_ramp2"
+        type="highway_mix"
+        route="route_east_thru"
+        begin="180" end="240"
+        vehsPerHour="8640"
+        departLane="best"
+        departSpeed="max"/>
+
+  <!-- Peak: 100% at t=240 through t=3360 -->
+  <flow id="flow_east_peak"
+        type="highway_mix"
+        route="route_east_thru"
+        begin="240" end="3360"
+        vehsPerHour="10800"
+        departLane="best"
+        departSpeed="max"/>
+
+  <!-- Wind-down: 70% from t=3360 to end -->
+  <flow id="flow_east_winddown"
+        type="highway_mix"
+        route="route_east_thru"
+        begin="3360" end="3600"
+        vehsPerHour="7560"
+        departLane="best"
+        departSpeed="max"/>
+
+  <!-- ── FLOW 2: Westbound mainline (6 lanes) — same demand shape -->
+  <flow id="flow_west_warmup"
+        type="highway_mix"
+        route="route_west_thru"
+        begin="0" end="120"
+        vehsPerHour="4320"
+        departLane="best"
+        departSpeed="max"/>
+
+  <flow id="flow_west_ramp1"
+        type="highway_mix"
+        route="route_west_thru"
+        begin="120" end="180"
+        vehsPerHour="6480"
+        departLane="best"
+        departSpeed="max"/>
+
+  <flow id="flow_west_ramp2"
+        type="highway_mix"
+        route="route_west_thru"
+        begin="180" end="240"
+        vehsPerHour="8640"
+        departLane="best"
+        departSpeed="max"/>
+
+  <flow id="flow_west_peak"
+        type="highway_mix"
+        route="route_west_thru"
+        begin="240" end="3360"
+        vehsPerHour="10800"
+        departLane="best"
+        departSpeed="max"/>
+
+  <flow id="flow_west_winddown"
+        type="highway_mix"
+        route="route_west_thru"
+        begin="3360" end="3600"
+        vehsPerHour="7560"
+        departLane="best"
+        departSpeed="max"/>
+
+  <!-- ── FLOW 3 & 4: HOV lanes (1200 veh/hr each direction) -->
+  <flow id="flow_hov_east"
+        type="hov_mix"
+        route="route_hov_east"
+        begin="0" end="3600"
+        vehsPerHour="1200"
+        departLane="best"
+        departSpeed="max"/>
+
+  <flow id="flow_hov_west"
+        type="hov_mix"
+        route="route_hov_west"
+        begin="0" end="3600"
+        vehsPerHour="1200"
+        departLane="best"
+        departSpeed="max"/>
+
+  <!-- ── FLOW 5: North frontage road eastbound (2 lanes, higher truck %) -->
+  <flow id="flow_fn_warmup"
+        type="frontage_mix"
+        route="route_fn_thru"
+        begin="0" end="240"
+        vehsPerHour="1440"
+        departLane="free"
+        departSpeed="random"/>
+
+  <flow id="flow_fn_peak"
+        type="frontage_mix"
+        route="route_fn_thru"
+        begin="240" end="3360"
+        vehsPerHour="3600"
+        departLane="free"
+        departSpeed="random"/>
+
+  <flow id="flow_fn_winddown"
+        type="frontage_mix"
+        route="route_fn_thru"
+        begin="3360" end="3600"
+        vehsPerHour="2520"
+        departLane="free"
+        departSpeed="random"/>
+
+  <!-- ── FLOW 6: South frontage road westbound -->
+  <flow id="flow_fs_warmup"
+        type="frontage_mix"
+        route="route_fs_thru"
+        begin="0" end="240"
+        vehsPerHour="1440"
+        departLane="free"
+        departSpeed="random"/>
+
+  <flow id="flow_fs_peak"
+        type="frontage_mix"
+        route="route_fs_thru"
+        begin="240" end="3360"
+        vehsPerHour="3600"
+        departLane="free"
+        departSpeed="random"/>
+
+  <flow id="flow_fs_winddown"
+        type="frontage_mix"
+        route="route_fs_thru"
+        begin="3360" end="3600"
+        vehsPerHour="2520"
+        departLane="free"
+        departSpeed="random"/>
+
+  <!-- ── FLOWS 7-12: On-ramp flows (1200 veh/hr each) -->
+
+  <!-- Ramp N 600 -->
+  <flow id="flow_rN600"
+        type="highway_mix"
+        route="route_rN600"
+        begin="0" end="3600"
+        vehsPerHour="1200"
+        departLane="best"
+        departSpeed="0"/>
+
+  <!-- Ramp N 1500 -->
+  <flow id="flow_rN1500"
+        type="highway_mix"
+        route="route_rN1500"
+        begin="0" end="3600"
+        vehsPerHour="1200"
+        departLane="best"
+        departSpeed="0"/>
+
+  <!-- Ramp N 2400 -->
+  <flow id="flow_rN2400"
+        type="highway_mix"
+        route="route_rN2400"
+        begin="0" end="3600"
+        vehsPerHour="1200"
+        departLane="best"
+        departSpeed="0"/>
+
+  <!-- Ramp S 600 -->
+  <flow id="flow_rS600"
+        type="highway_mix"
+        route="route_rS600"
+        begin="0" end="3600"
+        vehsPerHour="1200"
+        departLane="best"
+        departSpeed="0"/>
+
+  <!-- Ramp S 1500 -->
+  <flow id="flow_rS1500"
+        type="highway_mix"
+        route="route_rS1500"
+        begin="0" end="3600"
+        vehsPerHour="1200"
+        departLane="best"
+        departSpeed="0"/>
+
+  <!-- Ramp S 2400 -->
+  <flow id="flow_rS2400"
+        type="highway_mix"
+        route="route_rS2400"
+        begin="0" end="3600"
+        vehsPerHour="1200"
+        departLane="best"
+        departSpeed="0"/>
+
+  <!-- ============================================================
+       SECTION 4 — EGO VEHICLE
+       Departs at t=30 on lane 2 (middle of 6 eastbound lanes).
+       Travels at constant 15 m/s (speedFactor pinned to 0.45
+       since maxSpeed=33.33: 15/33.33 ≈ 0.45).
+       The rerouter in highway_bsm.add.xml loops it continuously.
+       ============================================================ -->
+  <vehicle id="ego"
+           type="ego_vehicle"
+           route="ego_circle_route"
+           depart="30"
+           departLane="2"
+           departSpeed="15">
+    <!-- Ego drives at constant ~15 m/s throughout the loop -->
+    <param key="has.ssm.device" value="true"/>
+  </vehicle>
+
+</routes>

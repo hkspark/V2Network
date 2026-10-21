@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  highway_bsm.launchd.xml
+  Veins launch descriptor: tells sumo-launchd.py how to start SUMO
+  and which configuration to load.
+
+  Referenced in omnetpp.ini:
+    *.manager.launchConfig = xmldoc("highway_bsm.launchd.xml")
+
+  sumo-launchd.py must be running before OMNeT++ simulation starts:
+    python3 sumo-launchd.py -vv -p 9999
+-->
+<launch>
+
+  <!-- COPY FILES: every file the SUMO process needs in its working directory -->
+  <copy file="highway_bsm.net.xml"/>
+  <copy file="highway_bsm.rou.xml"/>
+  <copy file="highway_bsm.add.xml"/>
+  <copy file="highway_bsm.sumo.cfg"/>
+
+  <!--
+    SUMO INVOCATION
+    seed       : 23423 (fixed for reproducibility)
+    remote-port: MUST match manager.port in omnetpp.ini (9999)
+    step-length: MUST be 0.1 to match 10 Hz BSM beacon interval
+    collision.action warn: never remove vehicles, keeps density high
+  -->
+  <basedir path="."/>
+
+  <seed value="23423"/>
+
+  <sumo>
+    <exec>sumo</exec>
+    <!-- Config file: sumo-launchd appends the remote-port argument -->
+    <argument>-c</argument>
+    <argument>highway_bsm.sumo.cfg</argument>
+    <argument>--remote-port</argument>
+    <argument>9999</argument>
+    <argument>--step-length</argument>
+    <argument>0.1</argument>
+    <argument>--no-step-log</argument>
+    <argument>--collision.action</argument>
+    <argument>warn</argument>
+    <argument>--time-to-teleport</argument>
+    <argument>120</argument>
+    <argument>--ignore-route-errors</argument>
+  </sumo>
+
+</launch>

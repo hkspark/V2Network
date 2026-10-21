@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  highway_bsm.net.xml
+  Katy Freeway (I-10) / I-405 style highway network
+  3000 m east-west corridor with:
+    - 6-lane bidirectional mainline (highway_east, highway_west)
+    - 1-lane HOV each direction  (hov_east, hov_west)
+    - 2-lane frontage roads N/S  (frontage_north, frontage_south)
+    - 3 on-ramps each side at x=600,1500,2400
+    - 2 off-ramps each side at x=900,2100
+  Lane width: 3.66 m  |  Mainline speed: 33.33 m/s  |  Length: 3000 m
+-->
+<net version="1.16" junctionCornerDetail="5"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
+
+  <!-- ============================================================
+       LOCATION / PROJECTION
+       ============================================================ -->
+  <location netOffset="0.00,0.00"
+            convBoundary="-100.00,-80.00,3200.00,80.00"
+            origBoundary="-100.00,-80.00,3200.00,80.00"
+            projParameter="!"/>
+
+  <!-- ============================================================
+       EDGE TYPES
+       ============================================================ -->
+  <type id="highway6"    priority="13" numLanes="6" speed="33.33" allow="all" width="3.66"/>
+  <type id="hov1"        priority="12" numLanes="1" speed="33.33" allow="all" width="3.66"/>
+  <type id="frontage2"   priority="10" numLanes="2" speed="22.22" allow="all" width="3.50"/>
+  <type id="ramp1"       priority="9"  numLanes="1" speed="33.33" allow="all" width="3.50"/>
+
+  <!-- ============================================================
+       NODES
+       Legend: x increases eastward, y=0 is mainline centreline
+       Mainline:  y =  0  (east) / y = 0  (west, same axis, opposite dir)
+       HOV:       y = 14  (east) / y = 14 (west)
+       Frontage N: y = 40
+       Frontage S: y = -40
+       ============================================================ -->
+
+  <!-- Mainline endpoints -->
+  <node id="main_W" x="0"    y="0"  type="dead_end"/>
+  <node id="main_E" x="3000" y="0"  type="dead_end"/>
+
+  <!-- HOV endpoints -->
+  <node id="hov_W"  x="0"    y="14" type="dead_end"/>
+  <node id="hov_E"  x="3000" y="14" type="dead_end"/>
+
+  <!-- Frontage road endpoints -->
+  <node id="fn_W"   x="0"    y="40" type="dead_end"/>
+  <node id="fn_E"   x="3000" y="40" type="dead_end"/>
+  <node id="fs_W"   x="0"    y="-40" type="dead_end"/>
+  <node id="fs_E"   x="3000" y="-40" type="dead_end"/>
+
+  <!-- HOV access nodes at x=200 and x=2800 (ramp tie-in) -->
+  <node id="hov_acc_W_e" x="200"  y="14" type="priority"/>
+  <node id="hov_acc_E_e" x="2800" y="14" type="priority"/>
+  <node id="hov_acc_W_w" x="200"  y="14" type="priority"/>
+  <node id="hov_acc_E_w" x="2800" y="14" type="priority"/>
+
+  <!-- On-ramp nodes: North side feeds eastbound mainline -->
+  <node id="rn600_fn"   x="600"  y="40"  type="priority"/>
+  <node id="rn600_ml"   x="780"  y="0"   type="zipper"/>
+  <node id="rn1500_fn"  x="1500" y="40"  type="priority"/>
+  <node id="rn1500_ml"  x="1680" y="0"   type="zipper"/>
+  <node id="rn2400_fn"  x="2400" y="40"  type="priority"/>
+  <node id="rn2400_ml"  x="2580" y="0"   type="zipper"/>
+
+  <!-- On-ramp nodes: South side feeds westbound mainline -->
+  <node id="rs600_fs"   x="600"  y="-40" type="priority"/>
+  <node id="rs600_ml"   x="420"  y="0"   type="zipper"/>
+  <node id="rs1500_fs"  x="1500" y="-40" type="priority"/>
+  <node id="rs1500_ml"  x="1320" y="0"   type="zipper"/>
+  <node id="rs2400_fs"  x="2400" y="-40" type="priority"/>
+  <node id="rs2400_ml"  x="2220" y="0"   type="zipper"/>
+
+  <!-- Off-ramp nodes: North side exits eastbound mainline to frontage -->
+  <node id="on900_ml"   x="900"  y="0"   type="priority"/>
+  <node id="on900_fn"   x="900"  y="40"  type="priority"/>
+  <node id="on2100_ml"  x="2100" y="0"   type="priority"/>
+  <node id="on2100_fn"  x="2100" y="40"  type="priority"/>
+
+  <!-- Off-ramp nodes: South side exits westbound mainline to frontage -->
+  <node id="os900_ml"   x="900"  y="0"   type="priority"/>
+  <node id="os900_fs"   x="900"  y="-40" type="priority"/>
+  <node id="os2100_ml"  x="2100" y="0"   type="priority"/>
+  <node id="os2100_fs"  x="2100" y="-40" type="priority"/>
+
+  <!-- ============================================================
+       EDGES — MAINLINE  (6 lanes each direction)
+       highway_east: traffic flows west→east (x=0 → x=3000)
+       highway_west: traffic flows east→west (x=3000 → x=0)
+       Lanes are numbered 0 (rightmost/outermost) to 5 (leftmost/HOV-adjacent)
+       ============================================================ -->
+
+  <!-- Eastbound mainline segments split at off-ramp nodes 900 and 2100 -->
+  <!-- Segment 1: x=0 → x=900 -->
+  <edge id="hw_e_0_900"  from="main_W"   to="on900_ml"   type="highway6"
+        shape="0,0 900,0"
+        spreadType="right">
+    <lane index="0" speed="33.33" width="3.66"/>
+    <lane index="1" speed="33.33" width="3.66"/>
+    <lane index="2" speed="33.33" width="3.66"/>
+    <lane index="3" speed="33.33" width="3.66"/>
+    <lane index="4" speed="33.33" width="3.66"/>
+    <lane index="5" speed="33.33" width="3.66"/>
+  </edge>
+
+  <!-- Segment 2: x=900 → x=2100 -->
+  <edge id="hw_e_900_2100"  from="on900_ml"  to="on2100_ml"  type="highway6"
+        shape="900,0 2100,0"
+        spreadType="right">
+    <lane index="0" speed="33.33" width="3.66"/>
+    <lane index="1" speed="33.33" width="3.66"/>
+    <lane index="2" speed="33.33" width="3.66"/>
+    <lane index="3" speed="33.33" width="3.66"/>
+    <lane index="4" speed="33.33" width="3.66"/>
+    <lane index="5" speed="33.33" width="3.66"/>
+  </edge>
+
+  <!-- Segment 3: x=2100 → x=3000 -->
+  <edge id="hw_e_2100_3000" from="on2100_ml" to="main_E"    type="highway6"
+        shape="2100,0 3000,0"
+        spreadType="right">
+    <lane index="0" speed="33.33" width="3.66"/>
+    <lane index="1" speed="33.33" width="3.66"/>
+    <lane index="2" speed="33.33" width="3.66"/>
+    <lane index="3" speed="33.33" width="3.66"/>
+    <lane index="4" speed="33.33" width="3.66"/>
+    <lane index="5" speed="33.33" width="3.66"/>
+  </edge>
+
+  <!-- Westbound mainline segments split at off-ramp nodes 2100 and 900 -->
+  <!-- Segment 1: x=3000 → x=2100 -->
+  <edge id="hw_w_3000_2100" from="main_E"    to="os2100_ml"  type="highway6"
+        shape="3000,-7.32 2100,-7.32"
+        spreadType="right">
+    <lane index="0" speed="33.33" width="3.66"/>
+    <lane index="1" speed="33.33" width="3.66"/>
+    <lane index="2" speed="33.33" width="3.66"/>
+    <lane index="3" speed="33.33" width="3.66"/>
+    <lane index="4" speed="33.33" width="3.66"/>
+    <lane index="5" speed="33.33" width="3.66"/>
+  </edge>
+
+  <!-- Segment 2: x=2100 → x=900 -->
+  <edge id="hw_w_2100_900"  from="os2100_ml" to="os900_ml"   type="highway6"
+        shape="2100,-7.32 900,-7.32"
+        spreadType="right">
+    <lane index="0" speed="33.33" width="3.66"/>
+    <lane index="1" speed="33.33" width="3.66"/>
+    <lane index="2" speed="33.33" width="3.66"/>
+    <lane index="3" speed="33.33" width="3.66"/>
+    <lane index="4" speed="33.33" width="3.66"/>
+    <lane index="5" speed="33.33" width="3.66"/>
+  </edge>
+
+  <!-- Segment 3: x=900 → x=0 -->
+  <edge id="hw_w_900_0"     from="os900_ml"  to="main_W"     type="highway6"
+        shape="900,-7.32 0,-7.32"
+        spreadType="right">
+    <lane index="0" speed="33.33" width="3.66"/>
+    <lane index="1" speed="33.33" width="3.66"/>
+    <lane index="2" speed="33.33" width="3.66"/>
+    <lane index="3" speed="33.33" width="3.66"/>
+    <lane index="4" speed="33.33" width="3.66"/>
+    <lane index="5" speed="33.33" width="3.66"/>
+  </edge>
+
+  <!-- ============================================================
+       EDGES — HOV LANES  (1 lane each direction, y=14 offset)
+       ============================================================ -->
+  <edge id="hov_east" from="hov_W" to="hov_E" numLanes="1" speed="33.33"
+        shape="0,14 3000,14" spreadType="right" width="3.66" priority="12"/>
+
+  <edge id="hov_west" from="hov_E" to="hov_W" numLanes="1" speed="33.33"
+        shape="3000,17.66 0,17.66" spreadType="right" width="3.66" priority="12"/>
+
+  <!-- ============================================================
+       EDGES — FRONTAGE ROADS  (2 lanes each, y=±40)
+       frontage_north: eastbound at y=40
+       frontage_south: westbound at y=-40
+       ============================================================ -->
+
+  <!-- North frontage: split at on-ramp and off-ramp nodes -->
+  <!-- Segment fn_W → rn600_fn -->
+  <edge id="fn_0_600"    from="fn_W"      to="rn600_fn"   numLanes="2" speed="22.22"
+        shape="0,40 600,40" spreadType="right" width="3.50" priority="10"/>
+  <!-- Segment rn600_fn → on900_fn -->
+  <edge id="fn_600_900"  from="rn600_fn"  to="on900_fn"   numLanes="2" speed="22.22"
+        shape="600,40 900,40" spreadType="right" width="3.50" priority="10"/>
+  <!-- Segment on900_fn → rn1500_fn -->
+  <edge id="fn_900_1500" from="on900_fn"  to="rn1500_fn"  numLanes="2" speed="22.22"
+        shape="900,40 1500,40" spreadType="right" width="3.50" priority="10"/>
+  <!-- Segment rn1500_fn → on2100_fn -->
+  <edge id="fn_1500_2100" from="rn1500_fn" to="on2100_fn" numLanes="2" speed="22.22"
+        shape="1500,40 2100,40" spreadType="right" width="3.50" priority="10"/>
+  <!-- Segment on2100_fn → rn2400_fn -->
+  <edge id="fn_2100_2400" from="on2100_fn" to="rn2400_fn" numLanes="2" speed="22.22"
+        shape="2100,40 2400,40" spreadType="right" width="3.50" priority="10"/>
+  <!-- Segment rn2400_fn → fn_E -->
+  <edge id="fn_2400_3000" from="rn2400_fn" to="fn_E"      numLanes="2" speed="22.22"
+        shape="2400,40 3000,40" spreadType="right" width="3.50" priority="10"/>
+
+  <!-- South frontage: westbound, split at ramp nodes -->
+  <edge id="fs_3000_2400" from="fs_E"      to="rs2400_fs"  numLanes="2" speed="22.22"
+        shape="3000,-40 2400,-40" spreadType="right" width="3.50" priority="10"/>
+  <edge id="fs_2400_2100" from="rs2400_fs" to="os2100_fs"  numLanes="2" speed="22.22"
+        shape="2400,-40 2100,-40" spreadType="right" width="3.50" priority="10"/>
+  <edge id="fs_2100_1500" from="os2100_fs" to="rs1500_fs"  numLanes="2" speed="22.22"
+        shape="2100,-40 1500,-40" spreadType="right" width="3.50" priority="10"/>
+  <edge id="fs_1500_900"  from="rs1500_fs" to="os900_fs"   numLanes="2" speed="22.22"
+        shape="1500,-40 900,-40" spreadType="right" width="3.50" priority="10"/>
+  <edge id="fs_900_600"   from="os900_fs"  to="rs600_fs"   numLanes="2" speed="22.22"
+        shape="900,-40 600,-40" spreadType="right" width="3.50" priority="10"/>
+  <edge id="fs_600_0"     from="rs600_fs"  to="fs_W"       numLanes="2" speed="22.22"
+        shape="600,-40 0,-40" spreadType="right" width="3.50" priority="10"/>
+
+  <!-- ============================================================
+       EDGES — ON-RAMPS (North → Eastbound mainline)
+       Each ramp: 400 m acceleration lane, entry speed 8.33 m/s
+       ============================================================ -->
+  <!-- Ramp N x=600: frontage node rn600_fn → mainline merge rn600_ml -->
+  <edge id="ramp_N_600"  from="rn600_fn"  to="rn600_ml"  numLanes="1" speed="33.33"
+        shape="600,40 690,20 780,0"  priority="9" width="3.50"/>
+
+  <!-- Ramp N x=1500 -->
+  <edge id="ramp_N_1500" from="rn1500_fn" to="rn1500_ml" numLanes="1" speed="33.33"
+        shape="1500,40 1590,20 1680,0" priority="9" width="3.50"/>
+
+  <!-- Ramp N x=2400 -->
+  <edge id="ramp_N_2400" from="rn2400_fn" to="rn2400_ml" numLanes="1" speed="33.33"
+        shape="2400,40 2490,20 2580,0" priority="9" width="3.50"/>
+
+  <!-- ON-RAMPS (South → Westbound mainline) -->
+  <!-- Ramp S x=600: frontage node rs600_fs → mainline merge rs600_ml -->
+  <edge id="ramp_S_600"  from="rs600_fs"  to="rs600_ml"  numLanes="1" speed="33.33"
+        shape="600,-40 510,-20 420,0"  priority="9" width="3.50"/>
+
+  <!-- Ramp S x=1500 -->
+  <edge id="ramp_S_1500" from="rs1500_fs" to="rs1500_ml" numLanes="1" speed="33.33"
+        shape="1500,-40 1410,-20 1320,0" priority="9" width="3.50"/>
+
+  <!-- Ramp S x=2400 -->
+  <edge id="ramp_S_2400" from="rs2400_fs" to="rs2400_ml" numLanes="1" speed="33.33"
+        shape="2400,-40 2310,-20 2220,0" priority="9" width="3.50"/>
+
+  <!-- ============================================================
+       EDGES — OFF-RAMPS (Eastbound mainline → North frontage)
+       Each ramp: 300 m deceleration lane
+       ============================================================ -->
+  <!-- Off-ramp N x=900: mainline split on900_ml → frontage on900_fn -->
+  <edge id="offramp_N_900"  from="on900_ml"  to="on900_fn"  numLanes="1" speed="22.22"
+        shape="900,0 900,40"   priority="9" width="3.50"/>
+
+  <!-- Off-ramp N x=2100 -->
+  <edge id="offramp_N_2100" from="on2100_ml" to="on2100_fn" numLanes="1" speed="22.22"
+        shape="2100,0 2100,40" priority="9" width="3.50"/>
+
+  <!-- OFF-RAMPS (Westbound mainline → South frontage) -->
+  <!-- Off-ramp S x=900: mainline split os900_ml → frontage os900_fs -->
+  <edge id="offramp_S_900"  from="os900_ml"  to="os900_fs"  numLanes="1" speed="22.22"
+        shape="900,-7.32 900,-40"  priority="9" width="3.50"/>
+
+  <!-- Off-ramp S x=2100 -->
+  <edge id="offramp_S_2100" from="os2100_ml" to="os2100_fs" numLanes="1" speed="22.22"
+        shape="2100,-7.32 2100,-40" priority="9" width="3.50"/>
+
+  <!-- ============================================================
+       CONNECTIONS
+       These define which lanes feed into which at merge/split nodes.
+       ============================================================ -->
+
+  <!-- Eastbound mainline: all 6 lanes continue through off-ramp nodes -->
+  <connection from="hw_e_0_900"     to="hw_e_900_2100"   fromLane="0" toLane="0"/>
+  <connection from="hw_e_0_900"     to="hw_e_900_2100"   fromLane="1" toLane="1"/>
+  <connection from="hw_e_0_900"     to="hw_e_900_2100"   fromLane="2" toLane="2"/>
+  <connection from="hw_e_0_900"     to="hw_e_900_2100"   fromLane="3" toLane="3"/>
+  <connection from="hw_e_0_900"     to="hw_e_900_2100"   fromLane="4" toLane="4"/>
+  <connection from="hw_e_0_900"     to="hw_e_900_2100"   fromLane="5" toLane="5"/>
+  <!-- Lane 0 (rightmost) also exits to off-ramp N 900 -->
+  <connection from="hw_e_0_900"     to="offramp_N_900"   fromLane="0" toLane="0"/>
+
+  <connection from="hw_e_900_2100"  to="hw_e_2100_3000"  fromLane="0" toLane="0"/>
+  <connection from="hw_e_900_2100"  to="hw_e_2100_3000"  fromLane="1" toLane="1"/>
+  <connection from="hw_e_900_2100"  to="hw_e_2100_3000"  fromLane="2" toLane="2"/>
+  <connection from="hw_e_900_2100"  to="hw_e_2100_3000"  fromLane="3" toLane="3"/>
+  <connection from="hw_e_900_2100"  to="hw_e_2100_3000"  fromLane="4" toLane="4"/>
+  <connection from="hw_e_900_2100"  to="hw_e_2100_3000"  fromLane="5" toLane="5"/>
+  <!-- Lane 0 also exits to off-ramp N 2100 -->
+  <connection from="hw_e_900_2100"  to="offramp_N_2100"  fromLane="0" toLane="0"/>
+
+  <!-- On-ramp merges into lane 0 of the next mainline segment -->
+  <connection from="ramp_N_600"     to="hw_e_900_2100"   fromLane="0" toLane="0"/>
+  <connection from="ramp_N_1500"    to="hw_e_2100_3000"  fromLane="0" toLane="0"/>
+  <connection from="ramp_N_2400"    to="hw_e_2100_3000"  fromLane="0" toLane="0"/>
+
+  <!-- Westbound mainline connections -->
+  <connection from="hw_w_3000_2100" to="hw_w_2100_900"   fromLane="0" toLane="0"/>
+  <connection from="hw_w_3000_2100" to="hw_w_2100_900"   fromLane="1" toLane="1"/>
+  <connection from="hw_w_3000_2100" to="hw_w_2100_900"   fromLane="2" toLane="2"/>
+  <connection from="hw_w_3000_2100" to="hw_w_2100_900"   fromLane="3" toLane="3"/>
+  <connection from="hw_w_3000_2100" to="hw_w_2100_900"   fromLane="4" toLane="4"/>
+  <connection from="hw_w_3000_2100" to="hw_w_2100_900"   fromLane="5" toLane="5"/>
+  <connection from="hw_w_3000_2100" to="offramp_S_2100"  fromLane="0" toLane="0"/>
+
+  <connection from="hw_w_2100_900"  to="hw_w_900_0"      fromLane="0" toLane="0"/>
+  <connection from="hw_w_2100_900"  to="hw_w_900_0"      fromLane="1" toLane="1"/>
+  <connection from="hw_w_2100_900"  to="hw_w_900_0"      fromLane="2" toLane="2"/>
+  <connection from="hw_w_2100_900"  to="hw_w_900_0"      fromLane="3" toLane="3"/>
+  <connection from="hw_w_2100_900"  to="hw_w_900_0"      fromLane="4" toLane="4"/>
+  <connection from="hw_w_2100_900"  to="hw_w_900_0"      fromLane="5" toLane="5"/>
+  <connection from="hw_w_2100_900"  to="offramp_S_900"   fromLane="0" toLane="0"/>
+
+  <!-- South on-ramp merges into lane 0 westbound -->
+  <connection from="ramp_S_2400"    to="hw_w_2100_900"   fromLane="0" toLane="0"/>
+  <connection from="ramp_S_1500"    to="hw_w_900_0"      fromLane="0" toLane="0"/>
+  <connection from="ramp_S_600"     to="hw_w_900_0"      fromLane="0" toLane="0"/>
+
+  <!-- Off-ramp from frontage road connections -->
+  <connection from="offramp_N_900"  to="fn_900_1500"     fromLane="0" toLane="0"/>
+  <connection from="offramp_N_2100" to="fn_2100_2400"    fromLane="0" toLane="0"/>
+  <connection from="offramp_S_900"  to="fs_900_600"      fromLane="0" toLane="0"/>
+  <connection from="offramp_S_2100" to="fs_2100_1500"    fromLane="0" toLane="0"/>
+
+  <!-- Frontage road internal connections -->
+  <connection from="fn_0_600"    to="fn_600_900"   fromLane="0" toLane="0"/>
+  <connection from="fn_0_600"    to="fn_600_900"   fromLane="1" toLane="1"/>
+  <connection from="fn_600_900"  to="fn_900_1500"  fromLane="0" toLane="0"/>
+  <connection from="fn_600_900"  to="fn_900_1500"  fromLane="1" toLane="1"/>
+  <connection from="fn_900_1500" to="fn_1500_2100" fromLane="0" toLane="0"/>
+  <connection from="fn_900_1500" to="fn_1500_2100" fromLane="1" toLane="1"/>
+  <connection from="fn_1500_2100" to="fn_2100_2400" fromLane="0" toLane="0"/>
+  <connection from="fn_1500_2100" to="fn_2100_2400" fromLane="1" toLane="1"/>
+  <connection from="fn_2100_2400" to="fn_2400_3000" fromLane="0" toLane="0"/>
+  <connection from="fn_2100_2400" to="fn_2400_3000" fromLane="1" toLane="1"/>
+
+  <!-- On-ramp feed from frontage -->
+  <connection from="fn_0_600"    to="ramp_N_600"   fromLane="0" toLane="0"/>
+  <connection from="fn_900_1500" to="ramp_N_1500"  fromLane="0" toLane="0"/>
+  <connection from="fn_2100_2400" to="ramp_N_2400" fromLane="0" toLane="0"/>
+
+  <connection from="fs_3000_2400" to="fs_2400_2100" fromLane="0" toLane="0"/>
+  <connection from="fs_3000_2400" to="fs_2400_2100" fromLane="1" toLane="1"/>
+  <connection from="fs_2400_2100" to="fs_2100_1500" fromLane="0" toLane="0"/>
+  <connection from="fs_2400_2100" to="fs_2100_1500" fromLane="1" toLane="1"/>
+  <connection from="fs_2100_1500" to="fs_1500_900"  fromLane="0" toLane="0"/>
+  <connection from="fs_2100_1500" to="fs_1500_900"  fromLane="1" toLane="1"/>
+  <connection from="fs_1500_900"  to="fs_900_600"   fromLane="0" toLane="0"/>
+  <connection from="fs_1500_900"  to="fs_900_600"   fromLane="1" toLane="1"/>
+  <connection from="fs_900_600"   to="fs_600_0"     fromLane="0" toLane="0"/>
+  <connection from="fs_900_600"   to="fs_600_0"     fromLane="1" toLane="1"/>
+
+  <!-- South on-ramp from frontage -->
+  <connection from="fs_2400_2100" to="ramp_S_2400"  fromLane="0" toLane="0"/>
+  <connection from="fs_1500_900"  to="ramp_S_1500"  fromLane="0" toLane="0"/>
+  <connection from="fs_900_600"   to="ramp_S_600"   fromLane="0" toLane="0"/>
+
+</net>

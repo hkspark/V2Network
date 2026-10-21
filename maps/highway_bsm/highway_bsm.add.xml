@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  highway_bsm.add.xml
+  Additional file: detectors, ego rerouter, and speed override for ego.
+  Load this via <additional-files> in highway_bsm.sumo.cfg
+-->
+<additional xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/additional_file.xsd">
+
+  <!-- ============================================================
+       EGO VEHICLE LOOP — REROUTER (Method A)
+       When the ego vehicle reaches the edge "offramp_N_2100" it is
+       rerouted back to "ego_circle_route", creating an infinite loop.
+       period="1" ensures the rerouter is evaluated every simulation second.
+       ============================================================ -->
+  <rerouter id="ego_loop"
+            edges="offramp_N_2100"
+            period="1">
+    <interval begin="0" end="3600">
+      <!-- 100% probability: always re-assign the circular route -->
+      <routeProbReroute id="ego_circle_route" probability="1.0"/>
+    </interval>
+  </rerouter>
+
+  <!-- Speed enforcement for ego: keep it at 15 m/s on the mainline segments.
+       Variable speed signs override IDM to hold constant speed. -->
+  <variableSpeedSign id="vss_ego_hw1" lanes="hw_e_0_900_2" startPos="0" endPos="900">
+    <step time="0"    speed="15"/>
+    <step time="3600" speed="15"/>
+  </variableSpeedSign>
+  <variableSpeedSign id="vss_ego_hw2" lanes="hw_e_900_2100_2" startPos="0" endPos="1200">
+    <step time="0"    speed="15"/>
+    <step time="3600" speed="15"/>
+  </variableSpeedSign>
+
+  <!-- ============================================================
+       SECTION 7 — DETECTORS
+       ============================================================ -->
+
+  <!-- E1 loop detector at mainline midpoint (lane 2 = middle lane) -->
+  <!-- Counts vehicles and measures flow every 10 s -->
+  <e1Detector id="mid_east_l0" lane="hw_e_900_2100_0" pos="600" freq="10"
+              file="detector_output.xml"/>
+  <e1Detector id="mid_east_l1" lane="hw_e_900_2100_1" pos="600" freq="10"
+              file="detector_output.xml"/>
+  <e1Detector id="mid_east_l2" lane="hw_e_900_2100_2" pos="600" freq="10"
+              file="detector_output.xml"/>
+  <e1Detector id="mid_east_l3" lane="hw_e_900_2100_3" pos="600" freq="10"
+              file="detector_output.xml"/>
+  <e1Detector id="mid_east_l4" lane="hw_e_900_2100_4" pos="600" freq="10"
+              file="detector_output.xml"/>
+  <e1Detector id="mid_east_l5" lane="hw_e_900_2100_5" pos="600" freq="10"
+              file="detector_output.xml"/>
+
+  <!-- Queue-length detector at ramp merge points (near end of each ramp, ~380 m in) -->
+  <e1Detector id="ramp_queue_600"  lane="ramp_N_600_0"  pos="380" freq="10"
+              file="detector_output.xml"/>
+  <e1Detector id="ramp_queue_1500" lane="ramp_N_1500_0" pos="380" freq="10"
+              file="detector_output.xml"/>
+  <e1Detector id="ramp_queue_2400" lane="ramp_N_2400_0" pos="380" freq="10"
+              file="detector_output.xml"/>
+
+  <!-- Lane-area detectors (E2) on eastbound mainline — measure density/occupancy -->
+  <laneAreaDetector id="density_e_l0" lane="hw_e_900_2100_0"
+                    pos="0" endPos="1200" freq="10" file="lane_output.xml"/>
+  <laneAreaDetector id="density_e_l1" lane="hw_e_900_2100_1"
+                    pos="0" endPos="1200" freq="10" file="lane_output.xml"/>
+  <laneAreaDetector id="density_e_l2" lane="hw_e_900_2100_2"
+                    pos="0" endPos="1200" freq="10" file="lane_output.xml"/>
+  <laneAreaDetector id="density_e_l3" lane="hw_e_900_2100_3"
+                    pos="0" endPos="1200" freq="10" file="lane_output.xml"/>
+  <laneAreaDetector id="density_e_l4" lane="hw_e_900_2100_4"
+                    pos="0" endPos="1200" freq="10" file="lane_output.xml"/>
+  <laneAreaDetector id="density_e_l5" lane="hw_e_900_2100_5"
+                    pos="0" endPos="1200" freq="10" file="lane_output.xml"/>
+
+</additional>
