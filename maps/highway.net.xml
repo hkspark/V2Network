@@ -1,0 +1,12 @@
+<net version="1.16">
+    <location netOffset="0.00,0.00" convBoundary="0.00,0.00,2000.00,0.00" origBoundary="0.00,0.00,2000.00,0.00" projParameter="!"/>
+
+    <edge id="E0" from="J0" to="J1" priority="1">
+        <lane id="E0_0" index="0" speed="33.33" length="2000.00" shape="0.00,0.00 2000.00,0.00"/>
+        <lane id="E0_1" index="1" speed="33.33" length="2000.00" shape="0.00,3.20 2000.00,3.20"/>
+        <lane id="E0_2" index="2" speed="33.33" length="2000.00" shape="0.00,6.40 2000.00,6.40"/>
+    </edge>
+
+    <junction id="J0" type="dead_end" x="0.00" y="3.20" incLanes="" intLanes="" shape="0.00,-1.60 0.00,8.00"/>
+    <junction id="J1" type="dead_end" x="2000.00" y="3.20" incLanes="E0_0 E0_1 E0_2" intLanes="" shape="2000.00,-1.60 2000.00,8.00"/>
+</net>

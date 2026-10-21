@@ -1,0 +1,14 @@
+<routes>
+    <vType id="car" accel="2.6" decel="4.5" sigma="0.5" length="5" minGap="2.5" maxSpeed="30"/>
+
+    <route id="r0" edges="E0"/>
+
+    <flow id="dense_flow"
+          type="car"
+          route="r0"
+          begin="0"
+          end="300"
+          period="0.35"
+          departLane="random"
+          departSpeed="random"/>
+</routes>
