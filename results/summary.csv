@@ -1,0 +1,5 @@
+experiment,verify_capacity_k,attack_rate,total_arrivals,total_verified,total_expired,total_critical_arrivals,total_critical_missed,critical_miss_rate_percent,mean_queue_length,max_queue_length,percent_steps_N_greater_K
+01_dense_ecdsa_like,10,0,348460,29802,318410,13866,3584,25.847396509447567,222.24366666666666,266,98.63333333333333
+02_dense_pqc_like,2,0,348460,5988,342216,13866,10210,73.6333477571037,230.262,274,99.56666666666666
+03_gridlock_attack_pqc_like,2,50,498460,6000,492104,13866,10212,73.64777152747727,330.2463333333333,374,100.0
+04_severe_gridlock_attack_pqc_like,2,150,798460,6000,791904,13866,10212,73.64777152747727,530.213,574,100.0
