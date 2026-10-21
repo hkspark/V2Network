@@ -1,0 +1,60 @@
+- apt update
+- apt install -y binutils build-essential gcc g++ bison flex perl qtbase5-dev qtchooser qt5-qmake qtbase-dev-tools libqtopengl5-dev libxml2-dev zlib1g-dev default-jre doxygen graphviz python3 python3-pip python3-dev python3-venv python3-numpy python3-pandas \
+  python3-posix python3-matplotlib python3-scipy libopenscenegraph libxerces libfox-1.6-dev libfox-1.6.0 cmake ninja-build libssl-dev python3-pytest python3-pytest-xdist unzip git
+
+
+Python Venv
+- python3 -m venv sumo_env
+- source sumo_env/bin/activate
+- pip install traci sumolib setuptools packaging ipython
+
+
+Omentpp
+- Install omnet from website
+- New Terminal outside of venv
+- tar -xzvf omnet.tar
+- cd omnet
+- source setenv
+- ./configure
+- make -j$(nproc)
+
+Veins
+-Install veins from website
+- unzip veins
+- install
+
+Liboqs
+- unzip liboqs
+- cd liboqs
+- cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX="liboqs-install"
+- cmake --install build
+- echo 'export LD_LIBRARY_PATH="/home/user/Downloads/liboqs/liboqs-install/lib{LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" >> ~/.bashrc
+- source ~/.bashrc
+I think that should be it to install liboqs but there might be some errors with oqs.h
+
+Sumo
+- wget https://sumo.dlr.de/releases/1.0.1/sumo-src-1.0.1.tar.gz
+- tar -xvzf sumo
+- cd sumo
+- mkdir build/cmake-build
+- cd build/cmake-build
+- cmake ../.. -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DPROJ_LIBRARY="" -DCMAKE_CXX_FLAGS="-DACCEPT_USE_OF_DEPRECATED_PROJ_API_H" -DGDAL_LIBRARY=""
+- make -j$(nproc)
+- make install
+- verify with sumo--version
+- echo 'export SUMO_HOME="/usr/local/share/sumo"' >> ~/.bashrc
+- echo 'export PYTHONPATH="$PYTHONPATH+$SUMO_HOME/tools"' >> ~/.bashrc
+- source ~/.bashrc
+*Hopefully the cmake will avoid errors, however if you have errors let me know bc I had a lot of errors*
+
+Scripts
+- unzip all files
+- cd veins/bin
+- ./veins_launchd -v -c sumo
+
+Run Scripts
+- Go back to venv
+- python3 scripts/run_validation.py
+- python3 scripts/plot_results.py
+- results in folder, graphs in results folder
+
