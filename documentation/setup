@@ -31,7 +31,7 @@ Liboqs
 - cmake --install build
 - echo 'export LD_LIBRARY_PATH="/home/user/Downloads/liboqs/liboqs-install/lib{LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" >> ~/.bashrc
 - source ~/.bashrc
-I think that should be it to install liboqs but there might be some errors with oqs.h
+*I think that should be it to install liboqs but there might be some errors with oqs.h*
 
 Sumo
 - wget https://sumo.dlr.de/releases/1.0.1/sumo-src-1.0.1.tar.gz
