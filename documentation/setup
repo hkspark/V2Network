@@ -1,3 +1,4 @@
+- sudo -s
 - apt update
 - apt install -y binutils build-essential gcc g++ bison flex perl qtbase5-dev qtchooser qt5-qmake qtbase-dev-tools libqtopengl5-dev libxml2-dev zlib1g-dev default-jre doxygen graphviz python3 python3-pip python3-dev python3-venv python3-numpy python3-pandas \
   python3-posix python3-matplotlib python3-scipy libopenscenegraph libxerces libfox-1.6-dev libfox-1.6.0 cmake ninja-build libssl-dev python3-pytest python3-pytest-xdist unzip git
