@@ -1,0 +1,21 @@
+run_validation.py
+
+1. Set variables (step_length = 0.1, BSM_interval =0.1, deadline = 0.15, SIM_end = 300)
+2. Define critical: 
+    - TTC = distance / relative speed
+    - IF distance < 60 m or ttc < 3 sec
+3. Define experiment, run with traci and sumo, kee array of vehicles with (id, pos, speed, state)
+    - MSG is arrival_time, sender, critical (boolean), fake (boolean)
+    - add message to queue
+    - Add # of criticals to total_critical_arrivals int
+    - fake_msg: (arrivaltime = now, sender = attacker, critical = False, fake = True
+    - Keep track of expired and critical message
+    - Utilizes FIFO queue
+    - simulate DoS with attack injection using attack_rate
+    - Iterates through queue and drops messages that exceed deadline
+    - Verifies K messages and logs latency
+    - Runs against each scenario (dense_ecdsa, dense_pqc, gridlock_attack_pqc, severe_gridlock_attack_pqc)
+    - Records stats
+
+
+
