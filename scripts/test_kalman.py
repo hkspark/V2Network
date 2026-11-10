@@ -8,6 +8,7 @@ import heapq
 
 import traci
 import pandas as pd
+import numpy as np
 
 
 BASE = Path(__file__).resolve().parent.parent
@@ -17,81 +18,172 @@ RESULTS.mkdir(exist_ok=True)
 
 
 STEP_LENGTH = 0.1
-BSM_INTERVAL = 0.1
 DEADLINE = 0.15
 SIM_END = 300.0
 BSM_RESIDUAL_THRESHOLD = 5.0
 
 
 
-class SimpleKalmanTracker:
-    """Tracks sender vehicle dynamics (x, y, speed) to predict future states
 
-    and compute state residuals for spoofing/attack detection.
+class SimpleKalmanTracker:
+    """
+    Constant-velocity Kalman filter.
+
+    State: [x, y, vx, vy]
+    Measurement: [x, y, vx, vy]
     """
 
-    def __init__(self, initial_x, initial_y, initial_speed, dt=0.1):
+    def __init__(
+        self,
+        initial_x,
+        initial_y,
+        initial_vx,
+        initial_vy,
+        dt=0.1
+    ):
         self.dt = dt
-        # State vector: [x, y, vx, vy] (assuming moving along x-axis vector)
-        self.x = initial_x
-        self.y = initial_y
-        self.vx = initial_speed
-        self.vy = 0.0
 
-        # Simple covariance / variance estimates
-        self.p_var = 1.0
+        self.x = np.array([
+            initial_x,
+            initial_y,
+            initial_vx,
+            initial_vy
+        ], dtype=float)
 
-    def predict(self, dt=0.1):
-        # Motion prediction step
-        pred_x = self.x + self.vx * dt
-        pred_y = self.y + self.vy * dt
-        return pred_x, pred_y
+        self.P = np.diag([4.0, 4.0, 9.0, 9.0])
 
-    def update(self, meas_x, meas_y, meas_speed):
-        # Predict current step state
-        pred_x, pred_y = self.predict(self.dt)
+        # Measurement noise covariance
+        self.R = np.diag([
+            2.5 ** 2,
+            2.5 ** 2,
+            1.5 ** 2,
+            1.5 ** 2
+        ])
 
-        # Innovation / Residual calculation (euclidean distance difference)
-        residual = math.sqrt((meas_x - pred_x) ** 2 + (meas_y - pred_y) ** 2)
+        # Acceleration process-noise standard deviation
+        self.accel_std = 3.0
 
-        # Kalman state update
-        alpha = 0.6  # Filter gain factor
-        self.x = pred_x + alpha * (meas_x - pred_x)
-        self.y = pred_y + alpha * (meas_y - pred_y)
-        self.vx = meas_speed  # Speed updated directly
+    def predict(self, dt=None):
+        if dt is None:
+            dt = self.dt
 
-        return residual
+        self.F = np.array([
+            [1, 0, dt, 0],
+            [0, 1, 0, dt],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1]
+        ], dtype=float)
+
+        q = self.accel_std ** 2
+
+        q_block = np.array([
+            [dt ** 4 / 4, dt ** 3 / 2],
+            [dt ** 3 / 2, dt ** 2]
+        ]) * q
+
+        self.Q = np.zeros((4, 4))
+
+        # Position/velocity noise for x
+        self.Q[np.ix_([0, 2], [0, 2])] = q_block
+
+        # Position/velocity noise for y
+        self.Q[np.ix_([1, 3], [1, 3])] = q_block
+
+        self.x = self.F @ self.x
+        self.P = self.F @ self.P @ self.F.T + self.Q
+
+        return self.x.copy()
+
+    def update(self, meas_x, meas_y, meas_vx, meas_vy):
+        """
+        Predict, calculate innovation and NIS, then update only
+        if the measurement passes the statistical gate.
+        """
+
+        predicted_state = self.predict()
+
+        z = np.array([
+            meas_x,
+            meas_y,
+            meas_vx,
+            meas_vy
+        ], dtype=float)
+
+        H = np.eye(4)
+
+        innovation = z - (H @ predicted_state)
+
+        S = H @ self.P @ H.T + self.R
+
+        # NIS: innovation.T * inverse(S) * innovation
+        nis = float(
+            innovation.T @ np.linalg.solve(S, innovation)
+        )
+
+        position_residual = float(
+            np.linalg.norm(innovation[:2])
+        )
+
+        # 4 degrees of freedom, approximately 99% confidence
+        nis_threshold = 13.2767
+
+        suspicious = nis > nis_threshold
+
+        if not suspicious:
+            K = self.P @ H.T @ np.linalg.inv(S)
+
+            self.x = predicted_state + K @ innovation
+
+            I = np.eye(4)
+
+            # Joseph form covariance update for numerical stability
+            self.P = (
+                (I - K @ H) @ self.P @ (I - K @ H).T
+                + K @ self.R @ K.T
+            )
+
+        return {
+            "nis": nis,
+            "nis_threshold": nis_threshold,
+            "position_residual": position_residual,
+            "suspicious": suspicious,
+            "state": self.x.copy()
+        }
+
+
 
 
 def compute_kalman_priority(ego_state, sender_state, residual):
-    """Calculates a priority score based on Kalman prediction metrics,
-
-    Time-to-Collision (TTC), and residual consistency.
-    """
-    ego_x, ego_y, ego_speed = ego_state
-    x, y, speed = sender_state
-
-    distance = abs(x - ego_x)
-    relative_speed = max(speed - ego_speed, 0.1)
-    ttc = distance / relative_speed
-
-    # 1. Base kinematic criticality
+    ego_x, ego_y, ego_vx, ego_vy = ego_state
+    x, y, vx, vy = sender_state
+    dx = x - ego_x
+    dy = y - ego_y
+    distance = math.sqrt(dx ** 2 + dy ** 2)
+    if distance > 0.001:
+        relative_vx = vx - ego_vx
+        relative_vy = vy - ego_vy
+        closing_speed = -(
+            dx * relative_vx + dy * relative_vy
+        ) / distance
+    else:
+        closing_speed = 0.0
+    if closing_speed > 0.1:
+        ttc = distance / closing_speed
+    else:
+        ttc = float("inf")
     is_crit = distance < 60 or ttc < 3.0
-
-    # 2. Risk Score Formulation (Lower score = Higher Priority in Min-Heap)
-    # High residual implies anomalous/spoofed trajectory behavior -> penalize priority score
     residual_penalty = residual * 10.0
-
-    # High risk (low TTC / close distance) yields smaller numerical score (higher priority)
-    risk_score = ttc + (distance / 50.0) + residual_penalty
-
+    # Keep the priority score finite when there is no closing speed.
+    ttc_score = min(ttc, 60.0)
+    risk_score = (
+        ttc_score
+        + distance / 50.0
+        + residual_penalty
+    )
     return is_crit, risk_score
-
-
 def run_experiment(name, verify_capacity_k, attack_rate):
     sumo_binary = "sumo"
     config = str(MAPS / "config.sumocfg")
-
     traci.start(
         [
             sumo_binary,
@@ -103,12 +195,11 @@ def run_experiment(name, verify_capacity_k, attack_rate):
             "true",
         ]
     )
-
     # Priority queue stores items as: (priority_score, insertion_counter, msg)
     priority_queue = []
     trackers = {}  # Map of sender_id -> SimpleKalmanTracker
     logs = []
-
+    message_logs = []
     total_verified = 0
     total_expired = 0
     total_critical_arrivals = 0
@@ -120,62 +211,189 @@ def run_experiment(name, verify_capacity_k, attack_rate):
     total_forged_bsms_detected = 0
     total_false_alarms = 0
     total_legitimate_bsms = 0
-
+    true_positives = 0
+    false_positives = 0
+    true_negatives = 0
+    false_negatives = 0
     while traci.simulation.getTime() < SIM_END:
         traci.simulationStep()
         now = traci.simulation.getTime()
         veh_ids = traci.vehicle.getIDList()
-
         if len(veh_ids) == 0:
+            step += 1
             continue
-
         ego_id = veh_ids[0]
         ego_pos = traci.vehicle.getPosition(ego_id)
         ego_speed = traci.vehicle.getSpeed(ego_id)
-        ego_state = (ego_pos[0], ego_pos[1], ego_speed)
+        ego_angle = math.radians(traci.vehicle.getAngle(ego_id))
+        ego_vx = ego_speed * math.sin(ego_angle)
+        ego_vy = ego_speed * math.cos(ego_angle)
+        ego_state = (
+            ego_pos[0],
+            ego_pos[1],
+            ego_vx,
+            ego_vy
+        )
 
         arrivals_this_step = 0
         critical_arrivals_this_step = 0
         forged_detected_this_step = 0
         false_alarms_this_step = 0
 
-        # Process Legitimate Messages
+        
+   
+        # Process BSM messages
+
+        # Select existing senders to spoof.
+        # Do not attack during the first step; trackers need an initial observation.
+        sender_ids = [
+            vid for vid in veh_ids
+            if vid != ego_id and vid in trackers
+        ]
+
+        attack_count = min(attack_rate, len(sender_ids))
+
+        if step == 0 or not sender_ids:
+            attacked_ids = set()
+        else:
+            start_index = (step * attack_count) % len(sender_ids)
+
+            attacked_ids = {
+                sender_ids[(start_index + i) % len(sender_ids)]
+                for i in range(attack_count)
+            }
+
+        # Process each sender's BSM.
         for vid in veh_ids:
             if vid == ego_id:
                 continue
 
             pos = traci.vehicle.getPosition(vid)
             speed = traci.vehicle.getSpeed(vid)
-            sender_state = (pos[0], pos[1], speed)
+            angle = math.radians(traci.vehicle.getAngle(vid))
 
-            # Initialize or update Kalman Tracker for sender
-            if vid not in trackers:
-                trackers[vid] = SimpleKalmanTracker(pos[0], pos[1], speed)
-                residual = 0.0
-            else:
-                residual = trackers[vid].update(pos[0], pos[1], speed)
+            vx = speed * math.sin(angle)
+            vy = speed * math.cos(angle)
 
-            critical, priority_score = compute_kalman_priority(
-                ego_state, sender_state, residual
+            # Copy actual state into reported BSM values.
+            reported_x = pos[0]
+            reported_y = pos[1]
+            reported_vx = vx
+            reported_vy = vy
+
+            is_forged = vid in attacked_ids
+
+            # Apply simulated forgery.
+            if is_forged:
+                reported_x += 30.0
+                reported_y += 25.0
+                reported_vx += 8.0
+                reported_vy -= 6.0
+
+            sender_state = (
+                reported_x,
+                reported_y,
+                reported_vx,
+                reported_vy
             )
-            detected = residual> BSM_RESIDUAL_THRESHOLD
-            
-            total_legitimate_bsms += 1
-            
+
+            # Initialize tracker using the actual vehicle state.
+            # First observation cannot be evaluated yet.
+            if vid not in trackers:
+                trackers[vid] = SimpleKalmanTracker(
+                    pos[0],
+                    pos[1],
+                    vx,
+                    vy,
+                    dt=STEP_LENGTH
+                )
+
+                message_logs.append({
+                    "time": now,
+                    "sender": vid,
+                    "fake": is_forged,
+                    "classification": "not_evaluated",
+                    "nis": None,
+                    "residual": None,
+                    "detected": False
+                })
+
+                continue
+
+            # Evaluate the reported BSM using the Kalman tracker.
+            result = trackers[vid].update(
+                reported_x,
+                reported_y,
+                reported_vx,
+                reported_vy
+            )
+
+            nis = result["nis"]
+            residual = result["position_residual"]
+            detected = result["suspicious"]
+
+            # Update classification counters.
+            if is_forged:
+                total_forged_bsms += 1
+
+                if detected:
+                    true_positives += 1
+                    total_forged_bsms_detected += 1
+                    forged_detected_this_step += 1
+                    classification = "true_positive"
+                else:
+                    false_negatives += 1
+                    classification = "false_negative"
+
+            else:
+                total_legitimate_bsms += 1
+
+                if detected:
+                    false_positives += 1
+                    total_false_alarms += 1
+                    false_alarms_this_step += 1
+                    classification = "false_positive"
+                else:
+                    true_negatives += 1
+                    classification = "true_negative"
+
+            # Record individual BSM evaluation.
+            message_logs.append({
+                "time": now,
+                "sender": vid,
+                "fake": is_forged,
+                "classification": classification,
+                "nis": nis,
+                "residual": residual,
+                "detected": detected
+            })
+
+            # Reject suspicious BSMs before queue insertion.
             if detected:
-                total_false_alarms += 1
-                false_alarms_this_step += 1
+                continue
+
+            # Calculate verification priority.
+            critical, priority_score = compute_kalman_priority(
+                ego_state,
+                sender_state,
+                residual
+            )
 
             msg = {
                 "arrival_time": now,
                 "sender": vid,
                 "critical": critical,
-                "fake": False,
+                "fake": is_forged,
                 "residual": residual,
+                "nis": nis,
                 "detected": detected
             }
 
-            heapq.heappush(priority_queue, (priority_score, counter, msg))
+            heapq.heappush(
+                priority_queue,
+                (priority_score, counter, msg)
+            )
+
             counter += 1
             arrivals_this_step += 1
             total_arrivals += 1
@@ -184,49 +402,19 @@ def run_experiment(name, verify_capacity_k, attack_rate):
                 critical_arrivals_this_step += 1
                 total_critical_arrivals += 1
 
-        # Process Fake/Attacker Messages (Attacker attempts spoofing with arbitrary values)
-        for i in range(attack_rate):
-            fake_sender = f"attacker_{step}_{i}"
-            fake_pos = (
-                ego_pos[0] + 10.0 + (i % 5) * 10,
-                ego_pos[1],
-            )  # Fake proximity
-            fake_speed = 35.0
-
-            # Unregistered or chaotic trajectory creates artificial residual penalty
-            residual = 15.0  # Simulated high trajectory discrepancy
-            detected = residual > BSM_RESIDUAL_THRESHOLD
-            total_forged_bsms += 1
-            
-            if detected:
-                total_forged_bsms_detected += 1
-                forged_detected_this_step += 1
-
-            critical, priority_score = compute_kalman_priority(
-                ego_state, (fake_pos[0], fake_pos[1], fake_speed), residual
-            )
-
-            fake_msg = {
-                "arrival_time": now,
-                "sender": fake_sender,
-                "critical": False,  # Label truth: Fake message
-                "fake": True,
-                "residual": residual,
-                "detected": detected
-            }
-
-            heapq.heappush(priority_queue, (priority_score, counter, fake_msg))
-            counter += 1
-            arrivals_this_step += 1
-            total_arrivals += 1
+        # -------------------------------------------------
+        # Queue processing happens ONCE per simulation step.
+        # It must remain outside the vehicle-processing loop.
+        # -------------------------------------------------
 
         verified_this_step = 0
         expired_this_step = 0
         critical_missed_this_step = 0
         delays = []
 
-        # Filter out expired messages (> DEADLINE)
+        # Remove expired messages.
         valid_queue = []
+
         while priority_queue:
             score, cnt, msg = heapq.heappop(priority_queue)
             age = now - msg["arrival_time"]
@@ -238,48 +426,60 @@ def run_experiment(name, verify_capacity_k, attack_rate):
                 if msg["critical"]:
                     total_critical_missed += 1
                     critical_missed_this_step += 1
+
             else:
-                heapq.heappush(valid_queue, (score, cnt, msg))
+                heapq.heappush(
+                    valid_queue,
+                    (score, cnt, msg)
+                )
 
         priority_queue = valid_queue
 
-        # Cryptographic Verification Step: Verify up to Capacity K highest-priority messages
+        # Verify up to K messages per simulation step.
         while priority_queue and verified_this_step < verify_capacity_k:
             score, cnt, msg = heapq.heappop(priority_queue)
+
             delay = now - msg["arrival_time"]
 
             verified_this_step += 1
             total_verified += 1
             delays.append(delay)
 
-        mean_delay = sum(delays) / len(delays) if delays else 0
-
-        logs.append(
-            {
-                "time": now,
-                "vehicles": len(veh_ids),
-                "arrivals": arrivals_this_step,
-                "verify_capacity_k": verify_capacity_k,
-                "attack_rate": attack_rate,
-                "verified": verified_this_step,
-                "expired": expired_this_step,
-                "queue_length": len(priority_queue),
-                "critical_arrivals": critical_arrivals_this_step,
-                "critical_missed": critical_missed_this_step,
-                "mean_delay": mean_delay,
-                "n_greater_than_k": arrivals_this_step > verify_capacity_k,
-                "forged_bsms_detected": forged_detected_this_step,
-                "false_alarms": false_alarms_this_step
-            }
+        mean_delay = (
+            sum(delays) / len(delays)
+            if delays else 0
         )
 
+        # Record simulation-step metrics.
+        logs.append({
+            "time": now,
+            "vehicles": len(veh_ids),
+            "arrivals": arrivals_this_step,
+            "verify_capacity_k": verify_capacity_k,
+            "attack_rate": attack_rate,
+            "verified": verified_this_step,
+            "expired": expired_this_step,
+            "queue_length": len(priority_queue),
+            "critical_arrivals": critical_arrivals_this_step,
+            "critical_missed": critical_missed_this_step,
+            "mean_delay": mean_delay,
+            "n_greater_than_k": arrivals_this_step > verify_capacity_k,
+            "forged_bsms_detected": forged_detected_this_step,
+            "false_alarms": false_alarms_this_step
+        })
         step += 1
 
     traci.close()
 
+    # Save simulation-step results.
     df = pd.DataFrame(logs)
     out_file = RESULTS / f"{name}_kalman.csv"
     df.to_csv(out_file, index=False)
+
+    # Save individual BSM results.
+    message_df = pd.DataFrame(message_logs)
+    message_file = RESULTS / f"{name}_messages.csv"
+    message_df.to_csv(message_file, index=False)
 
     critical_miss_rate = (
         total_critical_missed / total_critical_arrivals
@@ -302,14 +502,23 @@ def run_experiment(name, verify_capacity_k, attack_rate):
         "percent_steps_N_greater_K": df["n_greater_than_k"].mean() * 100,
         "total_forged_bsms": total_forged_bsms,
         "forged_bsms_detected": total_forged_bsms_detected,
-        "forged_detection_rate_percent": (total_forged_bsms_detected / total_forged_bsms * 100 if total_forged_bsms > 0 else 0),
+        "forged_detection_rate_percent": (
+            total_forged_bsms_detected / total_forged_bsms * 100
+            if total_forged_bsms > 0 else 0
+        ),
         "false_alarms": total_false_alarms,
         "total_legitimate_bsms": total_legitimate_bsms,
-        "false_alarm_rate_percent": ( total_false_alarms / total_legitimate_bsms * 100 if total_legitimate_bsms > 0 else 0)
+        "false_alarm_rate_percent": (
+            total_false_alarms / total_legitimate_bsms * 100
+            if total_legitimate_bsms > 0 else 0
+        ),
+        "true_positives": true_positives,
+        "false_positives": false_positives,
+        "true_negatives": true_negatives,
+        "false_negatives": false_negatives
     }
 
     return summary
-
 
 def main():
     experiments = [
