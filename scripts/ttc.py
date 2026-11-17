@@ -43,7 +43,7 @@ def get_ttc(ego_state, sender_state):
     closing_speed = -((dx * (vx - ego_vx)) + (dy * (vy - ego_vy))) / distance
 
     if closing_speed > 0.1:
-        ttc = distance / closing_speed_speed
+        ttc = distance / closing_speed
     else:
         ttc = 999.0
     critical = (distance < 60.0) or (ttc < 3.0)
