@@ -259,7 +259,7 @@ def main():
             print(summary)
 
     summary_df = pd.DataFrame(summaries)
-    summary_df.to_csv(RESULTS / "summary.csv", index=False)
+    summary_df.to_csv(RESULTS / "summary_ttc.csv", index=False)
 
     print("\nFinished. Results saved in results/")
 
