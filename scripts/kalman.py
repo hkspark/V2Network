@@ -141,7 +141,7 @@ class SimpleKalmanTracker:
 
         return {
             "nis": nis,
-            "nis_threshold": nis_threshold,
+            "threshold": BSM_RESIDUAL_THRESHOLD,
             "position_residual": position_residual,
             "suspicious": suspicious,
             "state": self.x.copy()
@@ -278,9 +278,9 @@ def run_experiment(name, verify_capacity_k, attack_rate):
                     "sender": vid,
                     "fake": is_forged,
                     "classification": "not_evaluated",
-                    "nis": None,
-                    "residual": None,
-                    "detected": False
+                    "nis": nis,
+                    "residual": residual,
+                    "detected": detected
                 })
 
                 continue
