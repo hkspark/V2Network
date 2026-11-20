@@ -23,8 +23,6 @@ SIM_END = 300.0
 BSM_RESIDUAL_THRESHOLD = 20.0
 
 
-
-
 class SimpleKalmanTracker:
     """
     Constant-velocity Kalman filter.
@@ -144,7 +142,7 @@ class SimpleKalmanTracker:
 
         return {
             "nis": nis,
-            "nis_threshold": nis_threshold,
+            "threshold": BSM_RESIDUAL_THRESHOLD,
             "position_residual": position_residual,
             "suspicious": suspicious,
             "state": self.x.copy()
