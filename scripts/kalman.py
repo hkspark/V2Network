@@ -20,7 +20,7 @@ RESULTS.mkdir(exist_ok=True)
 STEP_LENGTH = 0.1
 DEADLINE = 0.15
 SIM_END = 300.0
-BSM_RESIDUAL_THRESHOLD = 5.0
+BSM_RESIDUAL_THRESHOLD = 20.0
 
 
 class SimpleKalmanTracker:
@@ -124,7 +124,7 @@ class SimpleKalmanTracker:
         # 4 degrees of freedom, approximately 99% confidence
         nis_threshold = 13.2767
 
-        suspicious = nis > nis_threshold
+        suspicious = nis > BSM_RESIDUAL_THRESHOLD
 
         if not suspicious:
             K = self.P @ H.T @ np.linalg.inv(S)
@@ -154,7 +154,7 @@ def compute_kalman_priority(residual, nis):
     Lower score = higher priority in the min-heap.
     """
     # Flag as critical if position residual exceeds threshold (or NIS > 95% chi-square)
-    is_crit = residual > BSM_RESIDUAL_THRESHOLD or nis > 9.4877
+    is_crit = residual > BSM_RESIDUAL_THRESHOLD
 
     # Pure Kalman score based on innovation residual and NIS
     risk_score = (residual * 10.0) + nis

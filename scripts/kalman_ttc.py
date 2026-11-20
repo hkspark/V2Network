@@ -20,7 +20,7 @@ RESULTS.mkdir(exist_ok=True)
 STEP_LENGTH = 0.1
 DEADLINE = 0.15
 SIM_END = 300.0
-BSM_RESIDUAL_THRESHOLD = 5.0
+BSM_RESIDUAL_THRESHOLD = 20.0
 
 
 
@@ -127,7 +127,7 @@ class SimpleKalmanTracker:
         # 4 degrees of freedom, approximately 99% confidence
         nis_threshold = 13.2767
 
-        suspicious = nis > nis_threshold
+        suspicious = nis > BSM_RESIDUAL_THRESHOLD
 
         if not suspicious:
             K = self.P @ H.T @ np.linalg.inv(S)
@@ -473,7 +473,7 @@ def run_experiment(name, verify_capacity_k, attack_rate):
 
     # Save simulation-step results.
     df = pd.DataFrame(logs)
-    out_file = RESULTS / f"{name}_kalman.csv"
+    out_file = RESULTS / f"{name}_kalman_ttc.csv"
     df.to_csv(out_file, index=False)
 
     # Save individual BSM results.
@@ -488,7 +488,7 @@ def run_experiment(name, verify_capacity_k, attack_rate):
     )
 
     summary = {
-        "experiment": f"{name}_kalman",
+        "experiment": f"{name}_kalman_ttc",
         "verify_capacity_k": verify_capacity_k,
         "attack_rate": attack_rate,
         "total_arrivals": total_arrivals,
@@ -557,7 +557,7 @@ def main():
         print(summary)
 
     summary_df = pd.DataFrame(summaries)
-    summary_df.to_csv(RESULTS / "kalman_summary.csv", index=False)
+    summary_df.to_csv(RESULTS / "kalman_ttc_summary.csv", index=False)
 
     print("\nKalman experiments finished. Results saved in results/")
 
