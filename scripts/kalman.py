@@ -17,9 +17,13 @@ RESULTS = BASE / "results"
 RESULTS.mkdir(exist_ok=True)
 
 
+#Interval of each step
 STEP_LENGTH = 0.1
+#Time before message expires
 DEADLINE = 0.15
+#Entire simulation end
 SIM_END = 300.0
+#Threshold for Kalman detection calculation
 BSM_RESIDUAL_THRESHOLD = 20.0
 
 
@@ -41,6 +45,7 @@ class SimpleKalmanTracker:
     ):
         self.dt = dt
 
+        #matrix of initial position of vehicle (x, y, velocity x, velocity y)
         self.x = np.array([
             initial_x,
             initial_y,
@@ -48,9 +53,10 @@ class SimpleKalmanTracker:
             initial_vy
         ], dtype=float)
 
+        #Initial covariance matrix (uncertainty in data)
         self.P = np.diag([4.0, 4.0, 9.0, 9.0])
 
-        # Measurement noise covariance
+        # Measurement noise covariance (standard deviation of actual)
         self.R = np.diag([
             2.5 ** 2,
             2.5 ** 2,
@@ -65,6 +71,7 @@ class SimpleKalmanTracker:
         if dt is None:
             dt = self.dt
 
+        #state transition matrix
         self.F = np.array([
             [1, 0, dt, 0],
             [0, 1, 0, dt],
