@@ -131,7 +131,9 @@ class SimpleKalmanTracker:
         # 4 degrees of freedom, approximately 99% confidence
         nis_threshold = 13.2767
 
-        suspicious = nis > BSM_RESIDUAL_THRESHOLD
+        suspicious_nis = nis > nis_threshold
+
+        suspicious_pos = position_residual > BSM_RESIDUAL_THRESHOLD
 
         if not suspicious:
             K = self.P @ H.T @ np.linalg.inv(S)
@@ -150,7 +152,7 @@ class SimpleKalmanTracker:
             "nis": nis,
             "threshold": BSM_RESIDUAL_THRESHOLD,
             "position_residual": position_residual,
-            "suspicious": suspicious,
+            "suspicious": suspicious_pos,
             "state": self.x.copy()
         }
 
