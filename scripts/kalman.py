@@ -287,9 +287,9 @@ def run_experiment(name, verify_capacity_k, attack_rate):
                     "sender": vid,
                     "fake": is_forged,
                     "classification": "not_evaluated",
-                    "nis": nis,
-                    "residual": residual,
-                    "detected": detected
+                    "nis": None,
+                    "residual": None,
+                    "detected": None
                 })
 
                 continue
