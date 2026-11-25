@@ -1,0 +1,5 @@
+experiment,verify_capacity_k,attack_rate,total_arrivals,total_verified,total_expired,total_critical_arrivals,total_critical_missed,critical_miss_rate_percent,mean_queue_length,max_queue_length,percent_steps_N_greater_K,total_forged_bsms,forged_bsms_detected,forged_detection_rate_percent,false_alarms,total_legitimate_bsms,false_alarm_rate_percent,true_positives,false_positives,true_negatives,false_negatives
+01_dense_ecdsa_like_kalman_ttc,10,0,349984,29777,319970,13450,1118,8.312267657992566,213.542,262,98.53333333333333,0,0,0.0,0,349984,0.0,0,0,349984,0
+02_dense_pqc_like_kalman_ttc,2,0,349984,5986,343745,13450,8461,62.90706319702603,229.32866666666666,278,99.63333333333333,0,0,0.0,0,349984,0.0,0,0,349984,0
+03_gridlock_attack_pqc_like_kalman_ttc,2,50,194957,5398,189406,7780,4209,54.10025706940874,126.93966666666667,180,88.0,143781,143781,100.0,11246,206203,5.453848877077443,143781,11246,194957,0
+04_severe_gridlock_attack_pqc_like_kalman_ttc,2,150,0,0,0,0,0,0.0,0.0,0,0.0,349984,349984,100.0,0,0,0.0,349984,0,0,0
